@@ -40,6 +40,21 @@ stages:
         ls -al terraform/modules/compute/
       displayName: 'Extract SSH Public Key for Terraform'
 
+    - script: |
+        echo "Checking if Azure CLI is installed..."
+        if ! command -v az &> /dev/null
+        then
+          echo "Azure CLI not found. Installing..."
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        else
+          echo "Azure CLI already installed. Updating..."
+          sudo apt-get update -y
+          sudo apt-get install --only-upgrade -y azure-cli
+        fi
+        az --version
+      displayName: "Ensure Azure CLI is installed"
+
+
     - task: AzureCLI@2
       inputs:
         azureSubscription: 'azure-connection'
