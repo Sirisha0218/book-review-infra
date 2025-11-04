@@ -24,14 +24,15 @@ stages:
       displayName: "Check Terraform is installed"
 
     - script: |
-        echo "Clearing any cached Azure CLI sessions..."
+        echo "Clearing Azure CLI cache..."
         az account clear || true
         rm -rf ~/.azure
       displayName: "Clear Azure CLI cache"
 
+
     - script: |
-        export ARM_USE_AZUREAD=true
         export ARM_USE_AZURECLI_AUTH=false
+        export ARM_USE_AZUREAD=true
         cd terraform
         terraform init -input=false
         terraform plan -input=false -var-file="envs/dev.tfvars"
