@@ -51,8 +51,9 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-        backendType: 'none'                        # <-- important
-        environmentServiceNameAzureRM: 'azure-connection'
+        backendType: 'none'                          # don't configure backend here
+        environmentServiceNameAzureRM: 'azure-connection'   # <-- required
+
 
     - task: TerraformTaskV4@4
       displayName: 'Terraform Plan'
@@ -71,3 +72,4 @@ stages:
         workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
         environmentServiceNameAzureRM: 'azure-connection'
         commandOptions: '-var-file="envs/dev.tfvars" -auto-approve'
+
