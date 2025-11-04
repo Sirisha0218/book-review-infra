@@ -7,7 +7,7 @@ trigger:
       - terraform/**
 
 variables:
-- group: Terraform-Azure-Creds   # still available for other values
+- group: Terraform-Azure-Creds   # contains servicePrincipalId, servicePrincipalKey, tenantId, subscriptionId
 
 stages:
 - stage: Terraform
@@ -16,7 +16,7 @@ stages:
   - job: Terraform_Apply
     displayName: 'Terraform Apply'
     pool:
-      name: 'linux-hosted-agent-pool'   # self-hosted pool name
+      name: 'linux-hosted-agent-pool'   # your self-hosted pool
     steps:
 
     - task: DownloadSecureFile@1
@@ -43,47 +43,23 @@ stages:
         fi
       displayName: "Ensure unzip is installed"
 
-    - task: TerraformInstaller@0
-      displayName: 'Install Terraform'
-      inputs:
-        terraformVersion: '1.7.2'
+    - script: |
+        echo "Terraform version check:"
+        terraform -version || echo "Terraform not found!"
+      displayName: "Check Terraform is installed"
 
-    # Debug step: echo the ARM_* variables to confirm subscription ID
     - script: |
         echo "ARM_CLIENT_ID=$ARM_CLIENT_ID"
         echo "ARM_TENANT_ID=$ARM_TENANT_ID"
         echo "ARM_SUBSCRIPTION_ID=$ARM_SUBSCRIPTION_ID"
-        # Don't echo ARM_CLIENT_SECRET since it's sensitive
-      displayName: "Echo Terraform environment variables"
+        # Don't echo ARM_CLIENT_SECRET
+        cd terraform
+        terraform init -input=false
+        terraform plan -input=false -var-file="envs/dev.tfvars"
+        terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
+      displayName: "Terraform Init/Plan/Apply"
       env:
         ARM_CLIENT_ID: $(servicePrincipalId)
         ARM_CLIENT_SECRET: $(servicePrincipalKey)
         ARM_TENANT_ID: $(tenantId)
         ARM_SUBSCRIPTION_ID: $(subscriptionId)
-
-    - task: TerraformTaskV4@4
-      displayName: 'Terraform Init'
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-        backendType: 'none'                          # don't configure backend here
-        environmentServiceNameAzureRM: 'azure-connection'
-
-    - task: TerraformTaskV4@4
-      displayName: 'Terraform Plan'
-      inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-        environmentServiceNameAzureRM: 'azure-connection'
-        commandOptions: '-var-file="envs/dev.tfvars"'
-
-    - task: TerraformTaskV4@4
-      displayName: 'Terraform Apply'
-      inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-        environmentServiceNameAzureRM: 'azure-connection'
-        commandOptions: '-var-file="envs/dev.tfvars" -auto-approve'
