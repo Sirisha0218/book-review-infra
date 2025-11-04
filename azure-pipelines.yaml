@@ -13,7 +13,7 @@ stages:
   - job: Terraform_Apply
     displayName: 'Terraform Apply'
     pool:
-      vmImage: 'linux-hosted-agent-pool'
+      name: 'linux-hosted-agent-pool'
     steps:
 
     - task: DownloadSecureFile@1
