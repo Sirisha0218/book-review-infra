@@ -1,24 +1,13 @@
 variables:
 - group: Terraform-Azure-Creds
 
-trigger:
-  paths:
-    include:
-      - terraform/**
-  branches:
-    include:
-      - main
-
 stages:
 - stage: Terraform
-  displayName: 'Provision Infrastructure'
   jobs:
   - job: Terraform_Apply
-    displayName: 'Terraform Apply'
     pool:
       name: 'linux-hosted-agent-pool'
     steps:
-
     - task: DownloadSecureFile@1
       name: download_ssh_key
       inputs:
@@ -27,7 +16,6 @@ stages:
     - script: |
         mkdir -p terraform/modules/compute
         cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_rsa.pub
-        ls -al terraform/modules/compute/
       displayName: "Place SSH public key for Terraform"
 
     - script: |
@@ -35,6 +23,11 @@ stages:
         terraform -version || echo "Terraform not found!"
       displayName: "Check Terraform is installed"
 
+    - script: |
+        echo "Clearing any cached Azure CLI sessions..."
+        az account clear || true
+        rm -rf ~/.azure
+      displayName: "Clear Azure CLI cache"
 
     - script: |
         export ARM_USE_AZUREAD=true
@@ -49,4 +42,3 @@ stages:
         ARM_CLIENT_SECRET: $(servicePrincipalKey)
         ARM_TENANT_ID: $(tenantId)
         ARM_SUBSCRIPTION_ID: $(subscriptionId)
-
