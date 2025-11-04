@@ -1,13 +1,21 @@
-variables:
-- group: Terraform-Azure-Creds
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/**
 
 stages:
 - stage: Terraform
+  displayName: 'Provision Infrastructure'
   jobs:
   - job: Terraform_Apply
+    displayName: 'Terraform Apply'
     pool:
-      name: 'linux-hosted-agent-pool'
+      vmImage: 'linux-hosted-agent-pool'
     steps:
+
     - task: DownloadSecureFile@1
       name: download_ssh_key
       inputs:
@@ -18,28 +26,33 @@ stages:
         cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_rsa.pub
       displayName: "Place SSH public key for Terraform"
 
-    - script: |
-        echo "Terraform version check:"
-        terraform -version || echo "Terraform not found!"
-      displayName: "Check Terraform is installed"
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: '1.7.2'
 
-    - script: |
-        echo "Clearing Azure CLI cache..."
-        az account clear || true
-        rm -rf ~/.azure
-      displayName: "Clear Azure CLI cache"
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        backendServiceArm: 'azure-connection'
 
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Plan'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        environmentServiceNameAzureRM: 'azure-connection'
+        commandOptions: '-var-file="envs/dev.tfvars"'
 
-    - script: |
-        export ARM_USE_AZURECLI_AUTH=false
-        export ARM_USE_AZUREAD=true
-        cd terraform
-        terraform init -input=false
-        terraform plan -input=false -var-file="envs/dev.tfvars"
-        terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
-      displayName: "Terraform Init/Plan/Apply"
-      env:
-        ARM_CLIENT_ID: $(servicePrincipalId)
-        ARM_CLIENT_SECRET: $(servicePrincipalKey)
-        ARM_TENANT_ID: $(tenantId)
-        ARM_SUBSCRIPTION_ID: 15abd6a4-a99d-49d7-b979-c12304f852f2
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Apply'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        environmentServiceNameAzureRM: 'azure-connection'
+        commandOptions: '-var-file="envs/dev.tfvars" -auto-approve'
