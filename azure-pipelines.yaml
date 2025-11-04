@@ -26,6 +26,25 @@ stages:
         cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_rsa.pub
       displayName: "Place SSH public key for Terraform"
 
+    - script: |
+        echo "Checking if unzip is installed..."
+        if ! command -v unzip >/dev/null 2>&1; then
+          echo "unzip not found, installing..."
+          if [ -x "$(command -v apt-get)" ]; then
+            sudo apt-get update
+            sudo apt-get install -y unzip
+          elif [ -x "$(command -v yum)" ]; then
+            sudo yum install -y unzip
+          else
+            echo "Package manager not found. Please install unzip manually."
+            exit 1
+          fi
+        else
+          echo "unzip already installed."
+        fi
+      displayName: "Ensure unzip is installed"
+
+
     - task: TerraformInstaller@0
       displayName: 'Install Terraform'
       inputs:
