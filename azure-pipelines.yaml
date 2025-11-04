@@ -1,3 +1,6 @@
+variables:
+- group: Terraform-Azure-Creds
+
 trigger:
   paths:
     include:
@@ -32,15 +35,15 @@ stages:
         terraform -version || echo "Terraform not found!"
       displayName: "Check Terraform is installed"
 
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'azure-connection'
-        scriptType: bash
-        scriptLocation: inlineScript
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform
-        inlineScript: |
-          export ARM_USE_AZUREAD=true
-          unset ARM_USE_AZURECLI_AUTH
-          terraform init -input=false
-          terraform plan -input=false -var-file="envs/dev.tfvars"
-          terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
+
+    - script: |
+        cd terraform
+        terraform init -input=false
+        terraform plan -input=false -var-file="envs/dev.tfvars"
+        terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
+      displayName: "Terraform Init/Plan/Apply"
+      env:
+        ARM_CLIENT_ID: $(servicePrincipalId)
+        ARM_CLIENT_SECRET: $(servicePrincipalKey)
+        ARM_TENANT_ID: $(tenantId)
+        ARM_SUBSCRIPTION_ID: $(subscriptionId)
