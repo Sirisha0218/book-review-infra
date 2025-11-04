@@ -41,4 +41,4 @@ stages:
         ARM_CLIENT_ID: $(servicePrincipalId)
         ARM_CLIENT_SECRET: $(servicePrincipalKey)
         ARM_TENANT_ID: $(tenantId)
-        ARM_SUBSCRIPTION_ID: $(subscriptionId)
+        ARM_SUBSCRIPTION_ID: 15abd6a4-a99d-49d7-b979-c12304f852f2
